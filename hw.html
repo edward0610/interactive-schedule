@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動式幼兒視覺行程表</title>
+    <style>
+        :root {
+            --primary-color: #FFB347;
+            --bg-color: #FFF9F0;
+            --card-bg: #FFFFFF;
+            --text-color: #5D4037;
+            --success-color: #81C784;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 15px 0 10px 0;
+            border-bottom: 2px dashed #FFE0B2;
+            padding-bottom: 5px;
+        }
+
+        /* 圖卡選擇區 */
+        .task-bank {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .task-btn {
+            background-color: #FFF3E0;
+            border: 2px solid #FFE0B2;
+            border-radius: 12px;
+            padding: 10px 15px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-color);
+        }
+
+        .task-btn:hover {
+            transform: scale(1.05);
+            background-color: #FFE0B2;
+        }
+
+        /* 行程表區 */
+        .schedule-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 150px;
+            background-color: #FAFAFA;
+            border-radius: 12px;
+            padding: 15px;
+            border: 2px solid #EEEEEE;
+        }
+
+        .schedule-item {
+            background-color: white;
+            border: 2px solid #E0E0E0;
+            border-radius: 10px;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        .schedule-item:hover {
+            border-color: var(--primary-color);
+        }
+
+        .schedule-item.completed {
+            background-color: #F5F5F5;
+            border-color: var(--success-color);
+            color: #9E9E9E;
+        }
+
+        .schedule-item.completed .task-name {
+            text-decoration: line-through;
+        }
+
+        .check-icon {
+            font-size: 1.2rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .schedule-item.completed .check-icon {
+            opacity: 1;
+        }
+
+        /* 進度條與控制區 */
+        .progress-container {
+            margin-top: 20px;
+            background-color: #EEEEEE;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--success-color);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .clear-btn {
+            background-color: #FFCDD2;
+            color: #C62828;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .clear-btn:hover {
+            background-color: #EF9A9A;
+        }
+
+        .empty-msg {
+            text-align: center;
+            color: #9E9E9E;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🌟 我的超級行程表</h1>
+    
+    <div class="container">
+        <div class="section-title">1. 點擊加入行程：</div>
+        <div class="task-bank" id="taskBank">
+            <!-- JavaScript 動態生成按鈕 -->
+        </div>
+
+        <div class="section-title">2. 今日任務 (點擊打勾)：</div>
+        <div class="schedule-list" id="scheduleList">
+            <div class="empty-msg" id="emptyMsg">行程表空空的，快從上面加入任務吧！</div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div style="text-align: center; font-size: 0.9rem; margin-top: 5px; color: #757575;" id="progressText">完成度：0 / 0</div>
+
+        <div class="controls">
+            <button class="clear-btn" onclick="clearSchedule()">🗑️ 清空行程表</button>
+        </div>
+    </div>
+
+    <script>
+        // 可用的作息圖卡資料
+        const availableTasks = [
+            { icon: '🍽️', name: '吃飯' },
+            { icon: '🧼', name: '洗手' },
+            { icon: '📖', name: '看書' },
+            { icon: '🧸', name: '玩玩具' },
+            { icon: '🦷', name: '刷牙' },
+            { icon: '🛏️', name: '睡覺' },
+            { icon: '🚽', name: '上廁所' }
+        ];
+
+        let schedule = [];
+
+        // 初始化圖卡按鈕
+        function initTaskBank() {
+            const bank = document.getElementById('taskBank');
+            availableTasks.forEach(task => {
+                const btn = document.createElement('button');
+                btn.className = 'task-btn';
+                btn.innerHTML = `<span>${task.icon}</span> <span>${task.name}</span>`;
+                btn.onclick = () => addTask(task);
+                bank.appendChild(btn);
+            });
+        }
+
+        // 新增任務到行程表
+        function addTask(task) {
+            schedule.push({ ...task, completed: false, id: Date.now() });
+            renderSchedule();
+        }
+
+        // 切換完成狀態
+        function toggleTask(id) {
+            const task = schedule.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                renderSchedule();
+            }
+        }
+
+        // 清空行程表
+        function clearSchedule() {
+            if(confirm('確定要清空今天的行程表嗎？')) {
+                schedule = [];
+                renderSchedule();
+            }
+        }
+
+        // 渲染行程表畫面
+        function renderSchedule() {
+            const list = document.getElementById('scheduleList');
+            const emptyMsg = document.getElementById('emptyMsg');
+            
+            // 清除現有列表（保留空訊息元素以便控制顯示）
+            list.innerHTML = '';
+
+            if (schedule.length === 0) {
+                list.appendChild(emptyMsg);
+                emptyMsg.style.display = 'block';
+            } else {
+                emptyMsg.style.display = 'none';
+                schedule.forEach(task => {
+                    const item = document.createElement('div');
+                    item.className = `schedule-item ${task.completed ? 'completed' : ''}`;
+                    item.onclick = () => toggleTask(task.id);
+                    
+                    item.innerHTML = `
+                        <div>
+                            <span>${task.icon}</span> 
+                            <span class="task-name">${task.name}</span>
+                        </div>
+                        <span class="check-icon">✅</span>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+            updateProgress();
+        }
+
+        // 更新進度條
+        function updateProgress() {
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            if (schedule.length === 0) {
+                progressBar.style.width = '0%';
+                progressText.innerText = '完成度：0 / 0';
+                return;
+            }
+
+            const completedCount = schedule.filter(t => t.completed).length;
+            const percentage = (completedCount / schedule.length) * 100;
+            
+            progressBar.style.width = `${percentage}%`;
+            progressText.innerText = `完成度：${completedCount} / ${schedule.length}`;
+        }
+
+        // 網頁載入後執行初始化
+        window.onload = initTaskBank;
+    </script>
+</body>
+</html>
