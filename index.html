@@ -250,7 +250,7 @@
             const emptyMsg = document.getElementById('emptyMsg');
             
             // 清除現有列表（保留空訊息元素以便控制顯示）
-            list.innerHTML = '';
+            list.replaceChildren(emptyMsg);
 
             if (schedule.length === 0) {
                 list.appendChild(emptyMsg);
